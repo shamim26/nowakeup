@@ -1,0 +1,72 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Subtle radar / double tap pulse waves behind device -->
+    <path
+        android:strokeColor="#38BDF8"
+        android:strokeWidth="1.8"
+        android:strokeAlpha="0.35"
+        android:fillColor="#00000000"
+        android:pathData="M 54,34 A 20,20 0 0 1 54,74 A 20,20 0 0 1 54,34" />
+    <path
+        android:strokeColor="#818CF8"
+        android:strokeWidth="1.8"
+        android:strokeAlpha="0.25"
+        android:fillColor="#00000000"
+        android:pathData="M 54,26 A 28,28 0 0 1 54,82 A 28,28 0 0 1 54,26" />
+
+    <!-- Smartphone Body -->
+    <path
+        android:fillColor="#1E293B"
+        android:strokeColor="#38BDF8"
+        android:strokeWidth="2.5"
+        android:pathData="M 40,24 C 36,24 34,26 34,30 L 34,78 C 34,82 36,84 40,84 L 68,84 C 72,84 74,82 74,78 L 74,30 C 74,26 72,24 68,24 Z" />
+
+    <!-- Screen Area -->
+    <path
+        android:fillColor="#0F172A"
+        android:pathData="M 37,30 L 71,30 L 71,76 L 37,76 Z" />
+
+    <!-- Top Proximity Sensor & Earpiece -->
+    <path
+        android:fillColor="#64748B"
+        android:pathData="M 50,26 L 58,26 A 1,1 0 0 1 58,28 L 50,28 A 1,1 0 0 1 50,26 Z" />
+    <!-- Proximity Sensor Dot with bypass slash -->
+    <path
+        android:fillColor="#F43F5E"
+        android:pathData="M 44,27 A 1.2,1.2 0 1 1 44,27.01" />
+
+    <!-- Screen Graphic: Double Tap Ring 1 -->
+    <path
+        android:strokeColor="#38BDF8"
+        android:strokeWidth="1.6"
+        android:fillColor="#00000000"
+        android:pathData="M 54,46 A 8,8 0 1 1 54,62 A 8,8 0 1 1 54,46" />
+
+    <!-- Double Tap Ring 2 (outer tap wave) -->
+    <path
+        android:strokeColor="#818CF8"
+        android:strokeWidth="1.2"
+        android:strokeAlpha="0.7"
+        android:fillColor="#00000000"
+        android:pathData="M 54,41 A 13,13 0 1 1 54,67 A 13,13 0 1 1 54,41" />
+
+    <!-- Wake Sun / Power Icon in center of screen -->
+    <path
+        android:fillColor="#38BDF8"
+        android:pathData="M 52.5,49 L 55.5,49 L 55.5,55 L 52.5,55 Z" />
+    <path
+        android:strokeColor="#F8FAFC"
+        android:strokeWidth="1.6"
+        android:fillColor="#00000000"
+        android:pathData="M 51,52 A 4.5,4.5 0 1 0 57,52" />
+
+    <!-- Bottom Indicator Bar on Phone -->
+    <path
+        android:fillColor="#94A3B8"
+        android:pathData="M 50,80 L 58,80 A 0.8,0.8 0 0 1 58,81.6 L 50,81.6 A 0.8,0.8 0 0 1 50,80 Z" />
+
+</vector>

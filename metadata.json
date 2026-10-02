@@ -1,0 +1,8 @@
+{
+  "name": "Remix NoWakeProximity",
+  "description": "LSPosed module to prevent proximity sensor check from sleeping display on double-tap wake on HyperOS",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
