@@ -1,0 +1,155 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Release Tag Name (e.g. v1.0.0)'
+        required: false
+        default: ''
+      is_draft:
+        description: 'Publish as Draft'
+        required: false
+        type: boolean
+        default: false
+      is_prerelease:
+        description: 'Publish as Pre-release'
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-release:
+    name: Build & Release APK
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Ensure Executable gradlew
+        run: chmod +x gradlew
+
+      - name: Prepare Environment File
+        run: |
+          if [ ! -f .env ]; then
+            if [ -f .env.example ]; then
+              cp .env.example .env
+            else
+              touch .env
+            fi
+          fi
+
+      - name: Configure Signing Keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "Using custom production keystore from repository secrets."
+            echo "$KEYSTORE_BASE64" | base64 -d > "$GITHUB_WORKSPACE/my-upload-key.jks"
+            echo "KEYSTORE_PATH=$GITHUB_WORKSPACE/my-upload-key.jks" >> $GITHUB_ENV
+            echo "STORE_PASSWORD=${STORE_PASSWORD}" >> $GITHUB_ENV
+            echo "KEY_PASSWORD=${KEY_PASSWORD:-$STORE_PASSWORD}" >> $GITHUB_ENV
+          else
+            echo "No KEYSTORE_BASE64 provided. Generating self-signed CI release keystore..."
+            keytool -genkeypair -v \
+              -keystore "$GITHUB_WORKSPACE/my-upload-key.jks" \
+              -alias upload \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -storepass "ci_default_keystore_pass" \
+              -keypass "ci_default_keystore_pass" \
+              -dname "CN=NoWakeProximity, OU=CI, O=Shamim, L=Global, ST=Android, C=US"
+            echo "KEYSTORE_PATH=$GITHUB_WORKSPACE/my-upload-key.jks" >> $GITHUB_ENV
+            echo "STORE_PASSWORD=ci_default_keystore_pass" >> $GITHUB_ENV
+            echo "KEY_PASSWORD=ci_default_keystore_pass" >> $GITHUB_ENV
+          fi
+
+      - name: Run Unit Tests
+        run: ./gradlew test
+
+      - name: Build APKs (Release and Debug)
+        run: ./gradlew assembleRelease assembleDebug
+
+      - name: Organize Release Artifacts
+        id: organize_artifacts
+        run: |
+          mkdir -p release-artifacts
+
+          VERSION_TAG="${{ github.event.inputs.tag_name }}"
+          if [ -z "$VERSION_TAG" ]; then
+            VERSION_TAG="${{ github.ref_name }}"
+          fi
+          if [ -z "$VERSION_TAG" ]; then
+            VERSION_TAG="latest"
+          fi
+
+          echo "Detected version tag: $VERSION_TAG"
+
+          if [ -f app/build/outputs/apk/release/app-release.apk ]; then
+            cp app/build/outputs/apk/release/app-release.apk "release-artifacts/NoWakeProximity-${VERSION_TAG}-release.apk"
+          fi
+
+          if [ -f app/build/outputs/apk/debug/app-debug.apk ]; then
+            cp app/build/outputs/apk/debug/app-debug.apk "release-artifacts/NoWakeProximity-${VERSION_TAG}-debug.apk"
+          fi
+
+          cd release-artifacts
+          sha256sum *.apk > checksums.txt
+          cd ..
+
+          echo "artifact_tag=$VERSION_TAG" >> $GITHUB_OUTPUT
+          ls -la release-artifacts
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: NoWakeProximity-APKs-${{ steps.organize_artifacts.outputs.artifact_tag }}
+          path: release-artifacts/*
+
+      - name: Determine Release Tag
+        id: determine_tag
+        run: |
+          TAG="${{ github.event.inputs.tag_name }}"
+          if [ -z "$TAG" ]; then
+            TAG="${{ github.ref_name }}"
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.tag_name != ''
+        with:
+          tag_name: ${{ steps.determine_tag.outputs.tag }}
+          name: Release ${{ steps.determine_tag.outputs.tag }}
+          draft: ${{ github.event.inputs.is_draft || false }}
+          prerelease: ${{ github.event.inputs.is_prerelease || false }}
+          generate_release_notes: true
+          files: |
+            release-artifacts/*.apk
+            release-artifacts/checksums.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
