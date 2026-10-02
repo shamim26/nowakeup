@@ -47,6 +47,25 @@ jobs:
             fi
           fi
 
+      - name: Restore Debug Keystore
+        run: |
+          if [ -f debug.keystore.base64 ]; then
+            echo "Decoding debug.keystore from debug.keystore.base64..."
+            base64 -d debug.keystore.base64 > "$GITHUB_WORKSPACE/debug.keystore"
+          fi
+          if [ ! -f "$GITHUB_WORKSPACE/debug.keystore" ]; then
+            echo "Generating fallback debug.keystore..."
+            keytool -genkeypair -v \
+              -keystore "$GITHUB_WORKSPACE/debug.keystore" \
+              -alias androiddebugkey \
+              -storepass android \
+              -keypass android \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -dname "CN=Android Debug, O=Android, C=US"
+          fi
+
       - name: Run Unit Tests
         run: ./gradlew test
 
